@@ -109,3 +109,13 @@ export const resendVerification = async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Something went wrong" });
   }
 };
+
+export const googleCallback = (req: Request, res: Response) => {
+  try {
+    const user = req.user as any;
+    const token = generateToken(user._id.toString());
+    res.redirect(`${process.env.CLIENT_URL}/auth/callback?token=${token}`);
+  } catch (err) {
+    res.redirect(`${process.env.CLIENT_URL}/login`);
+  }
+};

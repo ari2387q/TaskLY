@@ -19,17 +19,7 @@ router.get(
   passport.authenticate("google", {
     session: false,
     failureRedirect: `${process.env.CLIENT_URL}/login`,
-  }),
-  (req, res) => {
-    try {
-      const user = req.user as any;
-      const token = generateToken(user._id.toString());
-      res.redirect(`${process.env.CLIENT_URL}/auth/callback?token=${token}`);
-    } catch (err) {
-      res.redirect(`${process.env.CLIENT_URL}/login`);
-    }
-  }
-);
+  }));
 router.post("/register", registerLimiter, authcontroller.register);
 router.post("/login", loginlimiter, authcontroller.login);
 
