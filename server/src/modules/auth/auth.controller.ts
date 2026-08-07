@@ -25,7 +25,7 @@ export const register=async(req:Request,res:Response)=>{
   }
   catch(error){
     if(error instanceof authService.AuthError){
-      return res.status(error.statusCode).json({message:"error.message"});
+      return res.status(error.statusCode).json({message:error.message});
     }
   
   console.error("REGISTER ERROR:", error);

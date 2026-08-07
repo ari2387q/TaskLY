@@ -16,7 +16,7 @@ export interface IUser extends Document {
   googleId?:string;
   createdAt: Date;
   updatedAt: Date;
-  generateVerificationToken():any;
+  generateVerificationToken():string;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
