@@ -64,3 +64,28 @@ export const addMember = async (req: Request, res: Response) => {
     res.status(400).json({ message: (err as Error).message });
   }
 };
+
+export const updateWorkspace = async (req: Request, res: Response) => {
+  try {
+    const requestorId = (req as any).user._id;
+    const { id } = req.params;
+    const { name, description } = req.body;
+
+    const workspace = await workspaceService.updateWorkspace(id, { name, description }, requestorId);
+    res.status(200).json({ success: true, workspace });
+  } catch (err) {
+    res.status(400).json({ message: (err as Error).message });
+  }
+};
+
+export const removeMember = async (req: Request, res: Response) => {
+  try {
+    const requestorId = (req as any).user._id;
+    const { id, memberId } = req.params;
+
+    const workspace = await workspaceService.removeMember(id, memberId, requestorId);
+    res.status(200).json({ success: true, workspace });
+  } catch (err) {
+    res.status(400).json({ message: (err as Error).message });
+  }
+};

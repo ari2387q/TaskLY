@@ -45,6 +45,20 @@ export const getSkillTasks = async (skillId: string, userId: string) => {
   return tasks;
 };
 
+export const getWorkspaceTasks = async (workspaceId: string, userId: string) => {
+  const workspace = await Workspace.findOne({
+    _id: workspaceId,
+    $or: [{ owner: userId }, { "members.user": userId }],
+  });
+  if (!workspace) throw new Error("Access to workspace denied");
+
+  const skills = await Skill.find({ workspace: workspaceId });
+  const skillIds = skills.map((s) => s._id);
+
+  const tasks = await Task.find({ skill: { $in: skillIds } }).sort({ dueDate: 1, createdAt: -1 });
+  return tasks;
+};
+
 export const updateTask = async (
   taskId: string,
   updates: {

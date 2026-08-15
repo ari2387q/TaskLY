@@ -7,7 +7,8 @@ export const getDashboard = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const data = await getDashboardData(req.user._id.toString());
+    const workspaceId = req.query.workspaceId ? req.query.workspaceId.toString() : undefined;
+    const data = await getDashboardData(req.user._id.toString(), workspaceId);
     res.json(data);
   } catch (error) {
     console.error("DASHBOARD ERROR:", error);

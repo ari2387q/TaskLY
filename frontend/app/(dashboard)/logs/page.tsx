@@ -23,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { logsApi, skillsApi } from "@/lib/api"
 import type { Log, Skill } from "@/lib/types"
 import { useToast } from "@/components/ui/use-toast"
+import { useWorkspaceStore } from "@/lib/stores/workspace-store"
 
 export default function LogsPage() {
   const [logs, setLogs] = useState<Log[]>([])
@@ -44,6 +45,7 @@ export default function LogsPage() {
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null)
 
   const { toast } = useToast()
+  const { activeWorkspace } = useWorkspaceStore()
 
   const getSkillName = (log: Log) => {
     if (log.skillName) return log.skillName
@@ -94,9 +96,10 @@ export default function LogsPage() {
   useEffect(() => {
     async function fetchData() {
       try {
+        const wsId = activeWorkspace?._id
         const [logsData, skillsData] = await Promise.all([
           logsApi.getAll(),
-          skillsApi.getAll(),
+          wsId ? skillsApi.getAll(wsId) : Promise.resolve([]),
         ])
         setLogs(logsData)
         setSkills(skillsData.filter((s) => s.isActive))

@@ -63,3 +63,53 @@ export const addMember = async (
 
   return workspace;
 };
+
+export const updateWorkspace = async (
+  workspaceId: string,
+  updates: { name?: string; description?: string },
+  requestorId: string
+) => {
+  const workspace = await Workspace.findOne({
+    _id: workspaceId,
+    $or: [
+      { owner: requestorId },
+      { members: { $elemMatch: { user: requestorId, role: "admin" } } },
+    ],
+  });
+
+  if (!workspace) throw new Error("Workspace not found or unauthorized to update");
+
+  if (updates.name) workspace.name = updates.name;
+  if (updates.description !== undefined) workspace.description = updates.description;
+
+  await workspace.save();
+  return workspace;
+};
+
+export const removeMember = async (
+  workspaceId: string,
+  memberId: string,
+  requestorId: string
+) => {
+  const workspace = await Workspace.findOne({
+    _id: workspaceId,
+  });
+
+  if (!workspace) throw new Error("Workspace not found");
+
+  const isOwner = workspace.owner.toString() === requestorId;
+  const isAdmin = workspace.members.some((m) => m.user.toString() === requestorId && m.role === "admin");
+  const isSelf = memberId === requestorId;
+
+  if (!isOwner && !isAdmin && !isSelf) {
+    throw new Error("Unauthorized to remove member");
+  }
+
+  if (workspace.owner.toString() === memberId) {
+    throw new Error("Cannot remove the owner of the workspace");
+  }
+
+  workspace.members = workspace.members.filter((m) => m.user.toString() !== memberId);
+  await workspace.save();
+  return workspace;
+};

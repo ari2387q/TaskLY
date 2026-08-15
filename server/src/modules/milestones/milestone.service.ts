@@ -36,8 +36,20 @@ export const createMilestone = async (
 
 export const getSkillMilestones = async (skillId: string, userId: string) => {
   await verifySkillAccess(skillId, userId);
-  const milestones = await Milestone.find({ skill: skillId }).sort({ createdAt: 1 });
-  return milestones;
+  return await Milestone.find({ skill: skillId }).sort({ targetDate: 1, createdAt: 1 });
+};
+
+export const getWorkspaceMilestones = async (workspaceId: string, userId: string) => {
+  const workspace = await Workspace.findOne({
+    _id: workspaceId,
+    $or: [{ owner: userId }, { "members.user": userId }],
+  });
+  if (!workspace) throw new Error("Access to workspace denied");
+
+  const skills = await Skill.find({ workspace: workspaceId });
+  const skillIds = skills.map((s) => s._id);
+
+  return await Milestone.find({ skill: { $in: skillIds } }).sort({ targetDate: 1, createdAt: 1 });
 };
 
 export const toggleMilestone = async (milestoneId: string, userId: string) => {

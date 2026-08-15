@@ -7,6 +7,7 @@ const router = Router();
 router.use(protect);
 
 router.post("/", taskController.createTask);
+router.get("/", taskController.getWorkspaceTasks);
 router.get("/skill/:skillId", taskController.getTasks);
 router.patch("/:id", taskController.updateTask);
 

@@ -83,12 +83,29 @@ export const workspaceApi = {
     })
     return res.workspace
   },
+  update: async (id: string, updates: { name?: string; description?: string }): Promise<Workspace> => {
+    const res = await fetchWithAuth(`/workspaces/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(updates),
+    })
+    return res.workspace
+  },
+  removeMember: async (id: string, memberId: string): Promise<Workspace> => {
+    const res = await fetchWithAuth(`/workspaces/${id}/members/${memberId}`, {
+      method: "DELETE",
+    })
+    return res.workspace
+  },
 }
 
 /* ========== Milestone API ========== */
 export const milestoneApi = {
   getBySkill: async (skillId: string): Promise<Milestone[]> => {
     const res = await fetchWithAuth(`/milestones/skill/${skillId}`)
+    return res.milestones ?? []
+  },
+  getWorkspace: async (workspaceId: string): Promise<Milestone[]> => {
+    const res = await fetchWithAuth(`/milestones?workspaceId=${workspaceId}`)
     return res.milestones ?? []
   },
   create: async (skillId: string, title: string, description?: string, targetDate?: string): Promise<Milestone> => {
@@ -108,6 +125,10 @@ export const milestoneApi = {
 export const taskApi = {
   getBySkill: async (skillId: string): Promise<Task[]> => {
     const res = await fetchWithAuth(`/tasks/skill/${skillId}`)
+    return res.tasks ?? []
+  },
+  getWorkspace: async (workspaceId: string): Promise<Task[]> => {
+    const res = await fetchWithAuth(`/tasks?workspaceId=${workspaceId}`)
     return res.tasks ?? []
   },
   create: async (
@@ -280,7 +301,8 @@ export const aiApi = {
 
 
 export const dashboardApi = {
-  get: async (): Promise<DashboardData> => {
-    return fetchWithAuth("/dashboard")
+  get: async (workspaceId?: string): Promise<DashboardData> => {
+    const url = workspaceId ? `/dashboard?workspaceId=${workspaceId}` : "/dashboard"
+    return fetchWithAuth(url)
   },
 }

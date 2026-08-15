@@ -79,6 +79,12 @@ export interface DashboardData {
   daysTracked: number
   activeStreak: number
   motivation: string
+  totalTasks: number
+  completedTasks: number
+  inProgressTasks: number
+  upcomingTasks: number
+  totalMilestones: number
+  completedMilestones: number
 }
 
 export interface StatsData {

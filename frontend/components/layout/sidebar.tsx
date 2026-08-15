@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   LayoutDashboard, Rocket, ClipboardList, BarChart3, LogOut,
-  Sun, Moon, Menu, X, Layers, ChevronDown, Plus, Check
+  Sun, Moon, Menu, X, Layers, ChevronDown, Plus, Check, BookOpen, CalendarDays, Settings, Clock
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/contexts/auth-context"
@@ -17,9 +17,10 @@ import { motion, AnimatePresence } from "framer-motion"
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Workspaces", href: "/workspaces", icon: Layers },
-  { name: "Skills", href: "/skills", icon: Rocket },
-  { name: "Logs", href: "/logs", icon: ClipboardList },
-  { name: "AI Model", href: "/ai", icon: BarChart3 },
+  { name: "Skills & Tasks", href: "/skills", icon: BookOpen },
+  { name: "Calendar", href: "/calendar", icon: CalendarDays },
+  { name: "Settings", href: "/settings", icon: Settings },
+  { name: "Logs", href: "/logs", icon: Clock },
 ]
 
 interface SidebarProps {

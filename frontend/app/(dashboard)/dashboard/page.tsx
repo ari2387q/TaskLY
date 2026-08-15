@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Rocket, Trophy, Calendar, Plus, ArrowRight, Zap, Target } from "lucide-react"
+import { Rocket, Trophy, Calendar, Plus, Zap, Target, CheckCircle2, ListTodo, Layers, Clock } from "lucide-react"
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 import { dashboardApi, skillsApi } from "@/lib/api"
 import type { DashboardData, Skill } from "@/lib/types"
+import { useWorkspaceStore } from "@/lib/stores/workspace-store"
 
 const COLORS = [
   "#3b82f6", // Blue
@@ -27,96 +28,107 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [skills, setSkills] = useState<Skill[]>([])
   const [loading, setLoading] = useState(true)
+  const { activeWorkspace } = useWorkspaceStore()
 
   useEffect(() => {
-    Promise.all([dashboardApi.get(), skillsApi.getAll()])
+    const wsId = activeWorkspace?._id
+    const fetches: Promise<any>[] = [dashboardApi.get(wsId)]
+    if (wsId) fetches.push(skillsApi.getAll(wsId))
+
+    Promise.all(fetches)
       .then(([dbData, skillsData]) => {
         setData(dbData)
-        setSkills(skillsData)
+        setSkills(skillsData ?? [])
       })
       .catch((err) => {
         console.error("Dashboard page load failed", err)
       })
       .finally(() => setLoading(false))
-  }, [])
+  }, [activeWorkspace?._id])
 
   if (loading) return <DashboardSkeleton />
   if (!data) return <p className="text-red-500">Failed to load dashboard</p>
 
-  const activeSkills = skills.filter((s) => s.isActive)
-  const chartData = activeSkills.map((s) => ({
-    name: s.name,
-    value: s.totalPractices || 1,
-    streak: s.currentStreak,
-  }))
+  const taskChartData = [
+    { name: "To Do", value: data.totalTasks - data.completedTasks - data.inProgressTasks, color: "#94a3b8" },
+    { name: "In Progress", value: data.inProgressTasks, color: "#f59e0b" },
+    { name: "Completed", value: data.completedTasks, color: "#10b981" },
+  ].filter(d => d.value > 0)
+
+  const milestoneProgress = data.totalMilestones > 0 
+    ? Math.round((data.completedMilestones / data.totalMilestones) * 100) 
+    : 0
 
   return (
     <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
+          <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-1 flex items-center gap-1.5">
+            <Layers className="h-3.5 w-3.5" />
+            {activeWorkspace?.name ?? "Overview"}
+          </p>
           <h1 className="text-4xl font-extrabold tracking-tight bg-clip-text text-foreground">
             Dashboard
           </h1>
-          <p className="text-muted-foreground mt-1">Welcome back! Here's how you're doing today.</p>
+          <p className="text-muted-foreground mt-1">Project overview and progress tracking.</p>
         </div>
-        <div className="text-xs font-semibold bg-accent text-accent-foreground px-4 py-2 rounded-full border border-primary/20">
-          ✨ Futuristic tracking active
+        <div className="text-xs font-semibold bg-accent text-accent-foreground px-4 py-2 rounded-full border border-primary/20 flex items-center gap-2">
+          <Zap className="h-3.5 w-3.5 text-amber-500" />
+          {data.activeStreak} Day Streak
         </div>
       </div>
 
       {/* Stats */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
+          title="Total Tasks"
+          value={data.totalTasks}
+          icon={ListTodo}
+          description={`${data.completedTasks} completed`}
+          cardClass="bg-gradient-to-br from-indigo-500 to-blue-600 text-white shadow-lg border-none"
+        />
+        <StatCard
+          title="Milestones"
+          value={`${milestoneProgress}%`}
+          icon={Target}
+          description={`${data.completedMilestones} of ${data.totalMilestones} done`}
+          cardClass="bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg border-none"
+        />
+        <StatCard
+          title="Upcoming"
+          value={data.upcomingTasks}
+          icon={Clock}
+          description="Due in next 7 days"
+          cardClass="bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg border-none"
+        />
+        <StatCard
           title="Total Skills"
           value={data.totalSkills}
           icon={Rocket}
-          description="Skills you're mastering"
-          cardClass="bg-gradient-to-br from-indigo-500 to-blue-600 text-white shadow-[0_10px_20px_-5px_rgba(79,70,229,0.3)] hover:shadow-[0_20px_35px_-5px_rgba(79,70,229,0.5)] border-none"
-        />
-        <StatCard
-          title="Active Streak"
-          value={data.activeStreak}
-          icon={Zap}
-          description="Days in a row"
-          cardClass="bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-[0_10px_20px_-5px_rgba(245,158,11,0.3)] hover:shadow-[0_20px_35px_-5px_rgba(245,158,11,0.5)] border-none"
-          iconClass="animate-bounce"
-        />
-        <StatCard
-          title="Completed Today"
-          value={data.practicedToday}
-          icon={Trophy}
-          description="Skills practiced today"
-          cardClass="bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-[0_10px_20px_-5px_rgba(16,185,129,0.3)] hover:shadow-[0_20px_35px_-5px_rgba(16,185,129,0.5)] border-none"
-        />
-        <StatCard
-          title="Days Tracked"
-          value={data.daysTracked}
-          icon={Calendar}
-          description="Total commitment"
-          cardClass="bg-gradient-to-br from-pink-500 to-rose-600 text-white shadow-[0_10px_20px_-5px_rgba(236,72,153,0.3)] hover:shadow-[0_20px_35px_-5px_rgba(236,72,153,0.5)] border-none"
+          description="Active learning areas"
+          cardClass="bg-gradient-to-br from-pink-500 to-rose-600 text-white shadow-lg border-none"
         />
       </div>
 
-      {/* Motivation + Quick Actions + Pie Chart */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-        {/* Pie Chart Card */}
+        {/* Task Distribution Chart */}
         <Card className="col-span-full lg:col-span-4 border border-border dark:border-primary/20 dark:bg-black/40 backdrop-blur-md hover:shadow-xl transition-all duration-300">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5 text-primary" />
-              <span>Active Skills Distribution</span>
+              <ListTodo className="h-5 w-5 text-primary" />
+              <span>Task Status Distribution</span>
             </CardTitle>
-            <CardDescription>Visual breakdown of your effort per skill</CardDescription>
+            <CardDescription>Visual breakdown of your workspace tasks</CardDescription>
           </CardHeader>
           <CardContent className="h-[260px] flex flex-col md:flex-row items-center justify-center gap-4">
-            {chartData.length > 0 ? (
+            {taskChartData.length > 0 ? (
               <>
                 <div className="w-full md:w-1/2 h-[200px] relative">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={chartData}
+                        data={taskChartData}
                         cx="50%"
                         cy="50%"
                         innerRadius={60}
@@ -124,11 +136,9 @@ export default function DashboardPage() {
                         paddingAngle={4}
                         dataKey="value"
                         isAnimationActive={true}
-                        animationBegin={200}
-                        animationDuration={1200}
                       >
-                        {chartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        {taskChartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
                       <Tooltip content={<CustomTooltip />} />
@@ -136,41 +146,38 @@ export default function DashboardPage() {
                   </ResponsiveContainer>
                   {/* Center Text */}
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-3xl font-extrabold text-foreground">{activeSkills.length}</span>
+                    <span className="text-3xl font-extrabold text-foreground">{data.totalTasks}</span>
                     <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground mt-0.5">
-                      Active
+                      Tasks
                     </span>
                   </div>
                 </div>
 
                 {/* Custom Legend */}
-                <div className="w-full md:w-1/2 max-h-[220px] overflow-y-auto space-y-1.5 pr-2">
-                  {chartData.map((entry, index) => {
-                    const skill = activeSkills[index]
-                    return (
-                      <div key={entry.name} className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2 truncate">
-                          <span
-                            className="h-2.5 w-2.5 rounded-full shrink-0"
-                            style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                          />
-                          <span className="font-semibold truncate">{entry.name}</span>
-                        </div>
-                        <span className="text-muted-foreground text-[11px] shrink-0 ml-2">
-                          {skill.totalPractices} logs • {skill.currentStreak}d streak
-                        </span>
+                <div className="w-full md:w-1/2 max-h-[220px] overflow-y-auto space-y-3 pr-2">
+                  {taskChartData.map((entry) => (
+                    <div key={entry.name} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="h-3 w-3 rounded-full shrink-0"
+                          style={{ backgroundColor: entry.color }}
+                        />
+                        <span className="font-semibold">{entry.name}</span>
                       </div>
-                    )
-                  })}
+                      <span className="text-muted-foreground font-bold">
+                        {entry.value}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </>
             ) : (
               <div className="flex flex-col items-center justify-center py-10 text-center space-y-3">
-                <Target className="h-10 w-10 text-muted-foreground animate-bounce" />
+                <ListTodo className="h-10 w-10 text-muted-foreground animate-pulse" />
                 <div>
-                  <p className="font-medium text-foreground">No active skills tracking</p>
-                  <p className="text-xs text-muted-foreground max-w-[250px] mt-1">
-                    Activate some skills in the Skills page to start tracking!
+                  <p className="font-medium text-foreground">No tasks yet</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Add tasks to your skills to track progress here.
                   </p>
                 </div>
                 <Button asChild size="sm" variant="outline" className="rounded-full">
@@ -189,24 +196,24 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="grid gap-4">
             <Button asChild variant="outline" className="justify-start gap-3 h-14 rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
-              <Link href="/skills?add=true">
+              <Link href="/skills">
                 <div className="p-2 rounded-xl bg-primary/10 text-primary">
-                  <Plus className="h-4 w-4" />
+                  <ListTodo className="h-4 w-4" />
                 </div>
                 <div>
-                  <div className="font-bold text-sm">Add New Skill</div>
-                  <div className="text-[10px] text-muted-foreground">Introduce a new habit</div>
+                  <div className="font-bold text-sm">Manage Tasks</div>
+                  <div className="text-[10px] text-muted-foreground">Update your progress</div>
                 </div>
               </Link>
             </Button>
             <Button asChild variant="outline" className="justify-start gap-3 h-14 rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
-              <Link href="/logs?add=true">
+              <Link href="/calendar">
                 <div className="p-2 rounded-xl bg-secondary/10 text-secondary">
-                  <Plus className="h-4 w-4" />
+                  <Calendar className="h-4 w-4" />
                 </div>
                 <div>
-                  <div className="font-bold text-sm">Add Practice Log</div>
-                  <div className="text-[10px] text-muted-foreground">Log today's practice</div>
+                  <div className="font-bold text-sm">View Calendar</div>
+                  <div className="text-[10px] text-muted-foreground">Check upcoming deadlines</div>
                 </div>
               </Link>
             </Button>
@@ -239,10 +246,7 @@ function CustomTooltip({ active, payload }: any) {
       <div className="bg-popover border border-border p-3 rounded-2xl shadow-xl text-xs space-y-1">
         <p className="font-extrabold text-foreground">{data.name}</p>
         <p className="text-muted-foreground">
-          Total Practices: <span className="font-bold text-primary">{data.value}</span>
-        </p>
-        <p className="text-muted-foreground">
-          Current Streak: <span className="font-bold text-primary">{data.streak} days</span>
+          Count: <span className="font-bold text-primary">{data.value}</span>
         </p>
       </div>
     )

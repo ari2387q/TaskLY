@@ -9,6 +9,8 @@ router.use(protect);
 router.post("/", workspaceController.createWorkspace);
 router.get("/", workspaceController.getWorkspaces);
 router.get("/:id", workspaceController.getWorkspaceById);
+router.put("/:id", workspaceController.updateWorkspace);
 router.post("/:id/members", workspaceController.addMember);
+router.delete("/:id/members/:memberId", workspaceController.removeMember);
 
 export default router;

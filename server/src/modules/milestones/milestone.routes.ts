@@ -7,6 +7,7 @@ const router = Router();
 router.use(protect);
 
 router.post("/", milestoneController.createMilestone);
+router.get("/", milestoneController.getWorkspaceMilestones);
 router.get("/skill/:skillId", milestoneController.getMilestones);
 router.patch("/:id/toggle", milestoneController.toggleMilestone);
 

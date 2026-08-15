@@ -40,6 +40,22 @@ export const getMilestones = async (req: Request, res: Response) => {
   }
 };
 
+export const getWorkspaceMilestones = async (req: Request, res: Response) => {
+  try {
+    const { workspaceId } = req.query;
+    const userId = (req as any).user._id;
+
+    if (!workspaceId) {
+      return res.status(400).json({ message: "workspaceId query parameter is required" });
+    }
+
+    const milestones = await milestoneService.getWorkspaceMilestones(workspaceId as string, userId);
+    res.status(200).json({ success: true, milestones });
+  } catch (err) {
+    res.status(400).json({ message: (err as Error).message });
+  }
+};
+
 export const toggleMilestone = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
