@@ -2,13 +2,15 @@ import express from "express";
 import cors from "cors";
 import morgan from "morgan";
 
-import authRoutes from "./modules/auth/auth.routes"
+import authRoutes from "./modules/auth/auth.routes";
 import skillsRoutes from "./modules/skills/skills.routes";
-import  logsRoutes from "./modules/logs/logs.routes";
+import logsRoutes from "./modules/logs/logs.routes";
 import aiRoutes from "./modules/ai/ai.routes";
-import dashboardRoutes from "./modules/dashboard/dashboard.routes"
+import dashboardRoutes from "./modules/dashboard/dashboard.routes";
+import workspaceRoutes from "./modules/workspaces/workspace.routes";
+import milestoneRoutes from "./modules/milestones/milestone.routes";
+import taskRoutes from "./modules/tasks/task.routes";
 import passport from "./config/passport";
-
 
 const app = express();
 app.set("trust proxy", 1);
@@ -34,7 +36,11 @@ app.use("/api/auth", authRoutes);
 app.use("/api/skills", skillsRoutes);
 app.use("/api/logs", logsRoutes);
 app.use("/api/ai", aiRoutes);
-app.use("/api/dashboard", dashboardRoutes)
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/workspaces", workspaceRoutes);
+app.use("/api/milestones", milestoneRoutes);
+app.use("/api/tasks", taskRoutes);
+
 app.get("/health", (_req, res) => {
   res.status(200).json({ status: "OK" });
 });

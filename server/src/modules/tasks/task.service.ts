@@ -1,0 +1,75 @@
+import Task from "./task.model";
+import Skill from "../skills/skill.model";
+import Workspace from "../workspaces/workspace.model";
+
+const verifySkillAccess = async (skillId: string, userId: string) => {
+  const skill = await Skill.findById(skillId);
+  if (!skill) throw new Error("Skill not found");
+
+  const workspace = await Workspace.findOne({
+    _id: skill.workspace,
+    $or: [{ owner: userId }, { "members.user": userId }],
+  });
+
+  if (!workspace) throw new Error("Access to skill workspace denied");
+  return skill;
+};
+
+export const createTask = async (
+  skillId: string,
+  title: string,
+  description: string | undefined,
+  priority: "low" | "medium" | "high",
+  dueDate: Date | undefined,
+  duration: number | undefined,
+  userId: string
+) => {
+  await verifySkillAccess(skillId, userId);
+
+  const task = await Task.create({
+    title,
+    description,
+    skill: skillId,
+    priority,
+    dueDate,
+    duration,
+    user: userId,
+  });
+
+  return task;
+};
+
+export const getSkillTasks = async (skillId: string, userId: string) => {
+  await verifySkillAccess(skillId, userId);
+  const tasks = await Task.find({ skill: skillId }).sort({ createdAt: -1 });
+  return tasks;
+};
+
+export const updateTask = async (
+  taskId: string,
+  updates: {
+    title?: string;
+    description?: string;
+    status?: "todo" | "in_progress" | "completed";
+    priority?: "low" | "medium" | "high";
+    dueDate?: Date;
+    duration?: number;
+  },
+  userId: string
+) => {
+  const task = await Task.findById(taskId);
+  if (!task) throw new Error("Task not found");
+
+  await verifySkillAccess(task.skill.toString(), userId);
+
+  // Update properties if provided
+  if (updates.title !== undefined) task.title = updates.title;
+  if (updates.description !== undefined) task.description = updates.description;
+  if (updates.status !== undefined) task.status = updates.status;
+  if (updates.priority !== undefined) task.priority = updates.priority;
+  if (updates.dueDate !== undefined) task.dueDate = updates.dueDate;
+  if (updates.duration !== undefined) task.duration = updates.duration;
+
+  await task.save();
+  return task;
+};
