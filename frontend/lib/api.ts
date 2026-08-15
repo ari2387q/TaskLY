@@ -1,4 +1,4 @@
-import type { Skill, Log, DashboardData, StatsData, User } from "./types"
+import type { Skill, Log, DashboardData, StatsData, User, Workspace, Milestone, Task } from "./types"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL 
 
@@ -40,27 +40,97 @@ export const authApi = {
 
 /* ========== Skills API ========== */
 export const skillsApi = {
-  getAll: async (): Promise<Skill[]> => {
-    const res = await fetchWithAuth("/skills")
+  getAll: async (workspaceId: string): Promise<Skill[]> => {
+    const res = await fetchWithAuth(`/skills?workspaceId=${workspaceId}`)
     if (Array.isArray(res)) return res
     if ("skills" in res) return res.skills as Skill[]
     return []
   },
   toggleActive: async (id: string): Promise<Skill> => {
-  return fetchWithAuth(`/skills/${id}/toggle`, {
-    method: "PATCH",
-  }) as Promise<Skill>
-},
-
-
-  create: async (name: string): Promise<Skill> => {
-    const res = await fetchWithAuth("/skills", { method: "POST", body: JSON.stringify({ name }) })
+    return fetchWithAuth(`/skills/${id}/toggle`, { method: "PATCH" }) as Promise<Skill>
+  },
+  create: async (name: string, workspaceId: string): Promise<Skill> => {
+    const res = await fetchWithAuth("/skills", { method: "POST", body: JSON.stringify({ name, workspaceId }) })
     const payload = res as any
-    // backend may return { success: true, skill } or the skill directly
     const backendSkill = payload.skill ?? payload
     return backendSkill as Skill
   },
-  markPracticed: async (id: string): Promise<Skill> => fetchWithAuth(`/skills/${id}/practice`, { method: "POST", body: JSON.stringify({}) }) as Promise<Skill>,
+  markPracticed: async (id: string): Promise<Skill> =>
+    fetchWithAuth(`/skills/${id}/practice`, { method: "POST", body: JSON.stringify({}) }) as Promise<Skill>,
+}
+
+/* ========== Workspace API ========== */
+export const workspaceApi = {
+  getAll: async (): Promise<Workspace[]> => {
+    const res = await fetchWithAuth("/workspaces")
+    return res.workspaces ?? []
+  },
+  create: async (name: string, description?: string): Promise<Workspace> => {
+    const res = await fetchWithAuth("/workspaces", {
+      method: "POST",
+      body: JSON.stringify({ name, description }),
+    })
+    return res.workspace
+  },
+  getById: async (id: string): Promise<Workspace> => {
+    const res = await fetchWithAuth(`/workspaces/${id}`)
+    return res.workspace
+  },
+  addMember: async (id: string, email: string, role: "admin" | "member" = "member"): Promise<Workspace> => {
+    const res = await fetchWithAuth(`/workspaces/${id}/members`, {
+      method: "POST",
+      body: JSON.stringify({ email, role }),
+    })
+    return res.workspace
+  },
+}
+
+/* ========== Milestone API ========== */
+export const milestoneApi = {
+  getBySkill: async (skillId: string): Promise<Milestone[]> => {
+    const res = await fetchWithAuth(`/milestones/skill/${skillId}`)
+    return res.milestones ?? []
+  },
+  create: async (skillId: string, title: string, description?: string, targetDate?: string): Promise<Milestone> => {
+    const res = await fetchWithAuth("/milestones", {
+      method: "POST",
+      body: JSON.stringify({ skillId, title, description, targetDate }),
+    })
+    return res.milestone
+  },
+  toggle: async (id: string): Promise<Milestone> => {
+    const res = await fetchWithAuth(`/milestones/${id}/toggle`, { method: "PATCH" })
+    return res.milestone
+  },
+}
+
+/* ========== Task API ========== */
+export const taskApi = {
+  getBySkill: async (skillId: string): Promise<Task[]> => {
+    const res = await fetchWithAuth(`/tasks/skill/${skillId}`)
+    return res.tasks ?? []
+  },
+  create: async (
+    skillId: string,
+    title: string,
+    opts?: { description?: string; priority?: "low" | "medium" | "high"; dueDate?: string; duration?: number }
+  ): Promise<Task> => {
+    const res = await fetchWithAuth("/tasks", {
+      method: "POST",
+      body: JSON.stringify({ skillId, title, ...opts }),
+    })
+    return res.task
+  },
+  update: async (
+    id: string,
+    updates: { title?: string; description?: string; status?: Task["status"]; priority?: Task["priority"]; dueDate?: string; duration?: number }
+  ): Promise<Task> => {
+    const res = await fetchWithAuth(`/tasks/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(updates),
+    })
+    return res.task
+  },
 }
 
 /* ========== Logs API ========== */

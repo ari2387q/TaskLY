@@ -5,14 +5,61 @@ export interface User {
   createdAt: string
 }
 
+export interface WorkspaceMember {
+  user: {
+    _id: string
+    email: string
+  }
+  role: "admin" | "member"
+}
+
+export interface Workspace {
+  _id: string
+  name: string
+  description?: string
+  owner: {
+    _id: string
+    email: string
+  }
+  members: WorkspaceMember[]
+  createdAt: string
+  updatedAt: string
+}
+
 export interface Skill {
   id: string
   name: string
+  workspaceId: string
   isActive: boolean
   currentStreak: number
   longestStreak: number
   lastPracticed?: string
   totalPractices: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Milestone {
+  _id: string
+  title: string
+  description?: string
+  skill: string
+  isCompleted: boolean
+  targetDate?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Task {
+  _id: string
+  title: string
+  description?: string
+  skill: string
+  status: "todo" | "in_progress" | "completed"
+  priority: "low" | "medium" | "high"
+  dueDate?: string
+  duration?: number
+  user: string
   createdAt: string
   updatedAt: string
 }
@@ -25,6 +72,7 @@ export interface Log {
   notes: string | null
   createdAt: string
 }
+
 export interface DashboardData {
   totalSkills: number
   practicedToday: number
@@ -32,7 +80,6 @@ export interface DashboardData {
   activeStreak: number
   motivation: string
 }
-
 
 export interface StatsData {
   totalPractices: number

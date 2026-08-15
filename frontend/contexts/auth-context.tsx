@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { authApi } from "@/lib/api"
+import { useWorkspaceStore } from "@/lib/stores/workspace-store"
 import type { User } from "@/lib/types"
 
 interface AuthContextType {
@@ -19,15 +20,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
+  const { fetchWorkspaces, reset: resetWorkspaces } = useWorkspaceStore()
 
-  // 🔑 Restore session using BACKEND
   useEffect(() => {
     const initAuth = async () => {
       try {
-        console.log("TOKEN:", localStorage.getItem("token"))
-
         const { user } = await authApi.getProfile()
         setUser(user)
+        // Load workspaces once user is confirmed
+        await fetchWorkspaces()
       } catch {
         localStorage.removeItem("token")
         setUser(null)
@@ -35,24 +36,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false)
       }
     }
-
     initAuth()
   }, [])
 
   const login = async (email: string, password: string) => {
     const { user } = await authApi.login(email, password)
     setUser(user)
+    await fetchWorkspaces()
     router.push("/dashboard")
   }
 
   const register = async (email: string, password: string, name?: string) => {
     await authApi.register(email, password, name)
-  
   }
 
   const logout = () => {
     localStorage.removeItem("token")
     setUser(null)
+    resetWorkspaces()
     router.push("/login")
   }
 
