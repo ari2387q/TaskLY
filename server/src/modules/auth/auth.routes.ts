@@ -24,21 +24,15 @@ router.get(
         return res.redirect(`${process.env.CLIENT_URL}/login?error=oauth_failed`);
       }
 
+      // Generate token using the correct payload key 'id' to match protect middleware
       const token = jwt.sign(
-        { userId: user._id },
+        { id: user._id.toString() },
         process.env.JWT_SECRET!,
         { expiresIn: "7d" }
       );
 
-      // httpOnly cookie
-      res.cookie("token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
-
-      return res.redirect(`${process.env.CLIENT_URL}/dashboard`);
+      // Redirect back to frontend OAuth callback route with the token
+      return res.redirect(`${process.env.CLIENT_URL}/auth/callback?token=${token}`);
     })(req, res, next);
   }
 );
