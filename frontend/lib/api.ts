@@ -294,15 +294,21 @@ export const aiApi = {
     }),
 
   getHistory: async () => {
-    const res = await fetchWithAuth("/ai/history");
-    return res;
+    const res = await fetchWithAuth("/ai/history")
+    return res
   },
-};
 
+  getMotivation: async (): Promise<string> => {
+    const res = await fetchWithAuth("/ai/motivation")
+    return res.motivation ?? "Every expert was once a beginner. Keep going."
+  },
+}
 
+/* ========== Dashboard API ========== */
 export const dashboardApi = {
   get: async (workspaceId?: string): Promise<DashboardData> => {
     const url = workspaceId ? `/dashboard?workspaceId=${workspaceId}` : "/dashboard"
     return fetchWithAuth(url)
   },
 }
+

@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 
-import { dashboardApi, skillsApi } from "@/lib/api"
+import { dashboardApi, skillsApi, aiApi } from "@/lib/api"
 import type { DashboardData, Skill } from "@/lib/types"
 import { useWorkspaceStore } from "@/lib/stores/workspace-store"
 
@@ -30,6 +30,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const { activeWorkspace } = useWorkspaceStore()
 
+  const [motivation, setMotivation] = useState<string>("Let's make progress today 🚀")
+
   useEffect(() => {
     const wsId = activeWorkspace?._id
     const fetches: Promise<any>[] = [dashboardApi.get(wsId)]
@@ -44,6 +46,11 @@ export default function DashboardPage() {
         console.error("Dashboard page load failed", err)
       })
       .finally(() => setLoading(false))
+
+    // Fetch fresh AI motivation on each page load
+    aiApi.getMotivation()
+      .then(setMotivation)
+      .catch(() => {}) // silently fail
   }, [activeWorkspace?._id])
 
   if (loading) return <DashboardSkeleton />
@@ -230,7 +237,7 @@ export default function DashboardPage() {
         <CardContent>
           <div className="rounded-2xl bg-background/50 dark:bg-black/50 p-6 border border-border dark:border-primary/10">
             <blockquote className="text-lg font-medium italic text-foreground/90">
-              "{data.motivation}"
+              "{motivation}"
             </blockquote>
           </div>
         </CardContent>

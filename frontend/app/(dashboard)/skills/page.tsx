@@ -167,13 +167,14 @@ function TaskPanel({ skillId }: { skillId: string }) {
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {STATUS_COLUMNS.map((col) => {
           const colTasks = tasks.filter((t) => t.status === col.key)
           return (
-            <div key={col.key} className={cn("rounded-xl border p-2 space-y-1.5 min-h-[80px]", col.color, "bg-muted/20")}>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-1">
-                {col.label} ({colTasks.length})
+            <div key={col.key} className={cn("rounded-2xl border-2 p-3 space-y-2 min-h-[100px] bg-muted/20", col.color)}>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground px-1 flex items-center justify-between">
+                <span>{col.label}</span>
+                <span className="bg-muted rounded-full px-2 py-0.5 text-[10px]">{colTasks.length}</span>
               </p>
               <AnimatePresence>
                 {colTasks.map((task) => (
@@ -183,10 +184,10 @@ function TaskPanel({ skillId }: { skillId: string }) {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="group relative bg-card rounded-lg border border-border p-2 text-xs shadow-sm hover:shadow-md transition-all"
+                    className="group relative bg-card rounded-xl border border-border p-3 text-xs shadow-sm hover:shadow-md transition-all"
                   >
-                    <p className="font-medium text-foreground line-clamp-2 mb-1.5">{task.title}</p>
-                    <div className="flex items-center gap-1">
+                    <p className="font-semibold text-foreground leading-snug mb-2">{task.title}</p>
+                    <div className="flex items-center gap-1.5 flex-wrap mb-2">
                       <Badge className={cn("text-[9px] px-1.5 py-0 h-4 border font-bold", PRIORITY_COLORS[task.priority])}>
                         {task.priority}
                       </Badge>
@@ -198,12 +199,12 @@ function TaskPanel({ skillId }: { skillId: string }) {
                       )}
                     </div>
                     {/* Status cycle buttons */}
-                    <div className="flex gap-1 mt-1.5">
+                    <div className="flex gap-1 flex-wrap">
                       {STATUS_COLUMNS.filter((s) => s.key !== col.key).map((s) => (
                         <button
                           key={s.key}
                           onClick={() => handleStatusChange(task._id, s.key)}
-                          className="text-[9px] px-1.5 py-0.5 rounded-md bg-muted hover:bg-primary hover:text-primary-foreground transition-colors"
+                          className="text-[9px] px-2 py-0.5 rounded-md bg-muted hover:bg-primary hover:text-primary-foreground transition-colors font-medium"
                         >
                           → {s.label}
                         </button>
@@ -212,6 +213,9 @@ function TaskPanel({ skillId }: { skillId: string }) {
                   </motion.div>
                 ))}
               </AnimatePresence>
+              {colTasks.length === 0 && (
+                <p className="text-[10px] text-muted-foreground text-center py-4 italic">No tasks</p>
+              )}
             </div>
           )
         })}

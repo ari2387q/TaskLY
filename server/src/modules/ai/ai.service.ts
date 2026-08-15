@@ -193,3 +193,44 @@ export const callAI = async (
     throw error;
   }
 };
+
+/* ======================================================
+   GET DYNAMIC MOTIVATION QUOTE
+====================================================== */
+
+const MOTIVATION_THEMES = [
+  "overcoming procrastination",
+  "building daily habits",
+  "the power of consistency",
+  "embracing the learning curve",
+  "celebrating small wins",
+  "staying focused on your goals",
+  "resilience and bouncing back",
+  "the compound effect of practice",
+  "mastering new skills",
+  "growth mindset",
+];
+
+export const getMotivation = async (): Promise<string> => {
+  const theme = MOTIVATION_THEMES[Math.floor(Math.random() * MOTIVATION_THEMES.length)];
+  const seed = Math.random().toString(36).substring(7);
+
+  const messages = [
+    {
+      role: "system" as const,
+      content:
+        "You are a motivational coach. Return ONLY a single powerful, original, short motivational quote (1-2 sentences max) about the given theme. No author attribution. No markdown. No extra commentary. Just the quote text.",
+    },
+    {
+      role: "user" as const,
+      content: `Give me a unique motivational quote about: ${theme}. (seed: ${seed})`,
+    },
+  ];
+
+  try {
+    const quote = await callAI(messages);
+    return quote.trim().replace(/^"|"$/g, "");
+  } catch {
+    return "Every expert was once a beginner. Keep going.";
+  }
+};

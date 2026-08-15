@@ -18,7 +18,7 @@ export const createWorkspace = async (
 export const getUserWorkspaces = async (userId: string) => {
   const workspaces = await Workspace.find({
     $or: [{ owner: userId }, { "members.user": userId }],
-  }).populate("owner", "email");
+  }).populate("owner", "email").populate("members.user", "email");
   return workspaces;
 };
 

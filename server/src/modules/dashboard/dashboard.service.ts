@@ -16,8 +16,8 @@ export const getDashboardData = async (userId: string, workspaceId?: string) => 
 
   const totalSkills = skills.length;
 
-  // Fetch logs related to those skills
-  const logs = await Log.find({ user: userId, skillId: { $in: skillIds } }).sort({ practicedAt: 1 });
+  // Fetch logs related to those skills (field is 'skill', not 'skillId')
+  const logs = await Log.find({ user: userId, skill: { $in: skillIds } }).sort({ practicedAt: 1 });
 
   // Fetch tasks and milestones for those skills
   const tasks = await Task.find({ user: userId, skill: { $in: skillIds } });
