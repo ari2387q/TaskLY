@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import type { Skill, Milestone, Task } from "@/lib/types"
 import { skillsApi, milestoneApi, taskApi } from "@/lib/api"
@@ -21,6 +22,7 @@ function MilestonePanel({ skillId }: { skillId: string }) {
   const [milestones, setMilestones] = useState<Milestone[]>([])
   const [loading, setLoading] = useState(true)
   const [newTitle, setNewTitle] = useState("")
+  const [newDate, setNewDate] = useState("")
   const [adding, setAdding] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
 
@@ -34,9 +36,10 @@ function MilestonePanel({ skillId }: { skillId: string }) {
     if (!newTitle.trim()) return
     setAdding(true)
     try {
-      const m = await milestoneApi.create(skillId, newTitle.trim())
+      const m = await milestoneApi.create(skillId, newTitle.trim(), undefined, newDate || undefined)
       setMilestones((prev) => [...prev, m])
       setNewTitle("")
+      setNewDate("")
       setShowAdd(false)
     } finally {
       setAdding(false)
@@ -93,21 +96,29 @@ function MilestonePanel({ skillId }: { skillId: string }) {
       ))}
 
       {showAdd ? (
-        <div className="flex items-center gap-2 mt-2">
+        <div className="flex flex-col gap-2 mt-2 bg-muted/20 p-2 rounded-xl border">
           <Input
             placeholder="Milestone title..."
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-            className="h-8 text-sm rounded-xl"
+            className="h-8 text-sm rounded-xl bg-card"
             autoFocus
           />
-          <Button size="sm" className="h-8 rounded-xl px-3" onClick={handleAdd} disabled={adding}>
-            {adding ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
-          </Button>
-          <button onClick={() => setShowAdd(false)} className="text-muted-foreground hover:text-foreground">
-            <X className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <Input
+              type="date"
+              value={newDate}
+              onChange={(e) => setNewDate(e.target.value)}
+              className="h-8 text-xs rounded-xl flex-1 bg-card w-full"
+            />
+            <Button size="sm" className="h-8 rounded-xl px-3" onClick={handleAdd} disabled={adding || !newTitle.trim()}>
+              {adding ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
+            </Button>
+            <button onClick={() => setShowAdd(false)} className="text-muted-foreground hover:text-foreground px-2">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       ) : (
         <button
@@ -134,24 +145,34 @@ const STATUS_COLUMNS = [
   { key: "completed" as const, label: "Done", color: "border-emerald-500/40" },
 ]
 
-function TaskPanel({ skillId }: { skillId: string }) {
+function TaskPanel({ skillId, skillName }: { skillId: string, skillName: string }) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [newTitle, setNewTitle] = useState("")
+  const [newDate, setNewDate] = useState("")
+  const [newPriority, setNewPriority] = useState<"low" | "medium" | "high">("medium")
   const [adding, setAdding] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
 
   useEffect(() => {
-    taskApi.getBySkill(skillId).then(setTasks).finally(() => setLoading(false))
-  }, [skillId])
+    if (isOpen && loading) {
+      taskApi.getBySkill(skillId).then(setTasks).finally(() => setLoading(false))
+    }
+  }, [skillId, isOpen, loading])
 
   const handleAdd = async () => {
     if (!newTitle.trim()) return
     setAdding(true)
     try {
-      const t = await taskApi.create(skillId, newTitle.trim())
+      const t = await taskApi.create(skillId, newTitle.trim(), {
+        dueDate: newDate || undefined,
+        priority: newPriority
+      })
       setTasks((prev) => [t, ...prev])
       setNewTitle("")
+      setNewDate("")
+      setNewPriority("medium")
       setShowAdd(false)
     } finally {
       setAdding(false)
@@ -163,90 +184,132 @@ function TaskPanel({ skillId }: { skillId: string }) {
     await taskApi.update(id, { status })
   }
 
-  if (loading) return <div className="py-4 flex justify-center"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /></div>
+  const completedCount = tasks.filter(t => t.status === "completed").length
 
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {STATUS_COLUMNS.map((col) => {
-          const colTasks = tasks.filter((t) => t.status === col.key)
-          return (
-            <div key={col.key} className={cn("rounded-2xl border-2 p-3 space-y-2 min-h-[100px] bg-muted/20", col.color)}>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground px-1 flex items-center justify-between">
-                <span>{col.label}</span>
-                <span className="bg-muted rounded-full px-2 py-0.5 text-[10px]">{colTasks.length}</span>
-              </p>
-              <AnimatePresence>
-                {colTasks.map((task) => (
-                  <motion.div
-                    key={task._id}
-                    layout
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="group relative bg-card rounded-xl border border-border p-3 text-xs shadow-sm hover:shadow-md transition-all"
-                  >
-                    <p className="font-semibold text-foreground leading-snug mb-2">{task.title}</p>
-                    <div className="flex items-center gap-1.5 flex-wrap mb-2">
-                      <Badge className={cn("text-[9px] px-1.5 py-0 h-4 border font-bold", PRIORITY_COLORS[task.priority])}>
-                        {task.priority}
-                      </Badge>
-                      {task.dueDate && (
-                        <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
-                          <Clock className="h-2.5 w-2.5" />
-                          {new Date(task.dueDate).toLocaleDateString()}
-                        </span>
-                      )}
-                    </div>
-                    {/* Status cycle buttons */}
-                    <div className="flex gap-1 flex-wrap">
-                      {STATUS_COLUMNS.filter((s) => s.key !== col.key).map((s) => (
-                        <button
-                          key={s.key}
-                          onClick={() => handleStatusChange(task._id, s.key)}
-                          className="text-[9px] px-2 py-0.5 rounded-md bg-muted hover:bg-primary hover:text-primary-foreground transition-colors font-medium"
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="w-full justify-between rounded-xl h-9 border-dashed mt-2">
+          <span className="flex items-center gap-2">
+            <ListTodo className="h-4 w-4 text-muted-foreground" />
+            Manage Tasks
+          </span>
+          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+        </Button>
+      </DialogTrigger>
+      
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl p-6">
+        <DialogHeader className="mb-4">
+          <DialogTitle className="flex items-center gap-2 text-2xl">
+            <ListTodo className="h-6 w-6 text-primary" />
+            {skillName} Tasks
+          </DialogTitle>
+        </DialogHeader>
+        
+        {loading ? (
+          <div className="py-12 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
+        ) : (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {STATUS_COLUMNS.map((col) => {
+                const colTasks = tasks.filter((t) => t.status === col.key)
+                return (
+                  <div key={col.key} className={cn("rounded-2xl border-2 p-3 space-y-2 min-h-[150px] bg-muted/20", col.color)}>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground px-1 flex items-center justify-between">
+                      <span>{col.label}</span>
+                      <span className="bg-muted rounded-full px-2 py-0.5 text-[10px]">{colTasks.length}</span>
+                    </p>
+                    <AnimatePresence>
+                      {colTasks.map((task) => (
+                        <motion.div
+                          key={task._id}
+                          layout
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          className="group relative bg-card rounded-xl border border-border p-3 text-xs shadow-sm hover:shadow-md transition-all"
                         >
-                          → {s.label}
-                        </button>
+                          <p className="font-semibold text-foreground leading-snug mb-2">{task.title}</p>
+                          <div className="flex items-center gap-1.5 flex-wrap mb-2">
+                            <Badge className={cn("text-[9px] px-1.5 py-0 h-4 border font-bold", PRIORITY_COLORS[task.priority])}>
+                              {task.priority}
+                            </Badge>
+                            {task.dueDate && (
+                              <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
+                                <Clock className="h-2.5 w-2.5" />
+                                {new Date(task.dueDate).toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex gap-1 flex-wrap">
+                            {STATUS_COLUMNS.filter((s) => s.key !== col.key).map((s) => (
+                              <button
+                                key={s.key}
+                                onClick={() => handleStatusChange(task._id, s.key)}
+                                className="text-[9px] px-2 py-0.5 rounded-md bg-muted hover:bg-primary hover:text-primary-foreground transition-colors font-medium"
+                              >
+                                → {s.label}
+                              </button>
+                            ))}
+                          </div>
+                        </motion.div>
                       ))}
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-              {colTasks.length === 0 && (
-                <p className="text-[10px] text-muted-foreground text-center py-4 italic">No tasks</p>
-              )}
+                    </AnimatePresence>
+                    {colTasks.length === 0 && (
+                      <p className="text-[10px] text-muted-foreground text-center py-4 italic">No tasks</p>
+                    )}
+                  </div>
+                )
+              })}
             </div>
-          )
-        })}
-      </div>
 
-      {showAdd ? (
-        <div className="flex items-center gap-2">
-          <Input
-            placeholder="Task title..."
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-            className="h-8 text-sm rounded-xl"
-            autoFocus
-          />
-          <Button size="sm" className="h-8 rounded-xl px-3" onClick={handleAdd} disabled={adding}>
-            {adding ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
-          </Button>
-          <button onClick={() => setShowAdd(false)} className="text-muted-foreground hover:text-foreground">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      ) : (
-        <button
-          onClick={() => setShowAdd(true)}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
-        >
-          <Plus className="h-3.5 w-3.5" /> Add task
-        </button>
-      )}
-    </div>
+            {showAdd ? (
+              <div className="flex flex-col gap-3 mt-4 bg-muted/30 p-3 rounded-2xl border">
+                <Input
+                  placeholder="Task title..."
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+                  className="text-sm rounded-xl bg-card"
+                  autoFocus
+                />
+                <div className="flex flex-col sm:flex-row items-center gap-3">
+                  <Input
+                    type="date"
+                    value={newDate}
+                    onChange={(e) => setNewDate(e.target.value)}
+                    className="h-9 text-xs rounded-xl bg-card w-full sm:flex-1"
+                  />
+                  <select 
+                    value={newPriority}
+                    onChange={(e) => setNewPriority(e.target.value as any)}
+                    className="h-9 text-xs rounded-xl bg-card border px-3 w-full sm:flex-1"
+                  >
+                    <option value="low">Low Priority</option>
+                    <option value="medium">Medium Priority</option>
+                    <option value="high">High Priority</option>
+                  </select>
+                  <Button className="h-9 rounded-xl px-6 w-full sm:w-auto font-bold" onClick={handleAdd} disabled={adding || !newTitle.trim()}>
+                    {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Task"}
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => setShowAdd(false)} className="h-9 w-9 text-muted-foreground hover:text-foreground shrink-0">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={() => setShowAdd(true)}
+                className="w-full border-dashed rounded-xl gap-2 mt-2"
+              >
+                <Plus className="h-4 w-4" /> Add New Task
+              </Button>
+            )}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -377,7 +440,7 @@ function SkillCard({
                 {activeTab === "milestones" ? (
                   <MilestonePanel skillId={skill.id} />
                 ) : (
-                  <TaskPanel skillId={skill.id} />
+                  <TaskPanel skillId={skill.id} skillName={skill.name} />
                 )}
               </motion.div>
             )}
