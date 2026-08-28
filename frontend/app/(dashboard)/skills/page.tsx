@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react"
 import {
   Plus, Zap, CheckCircle2, Power, Target, ListTodo,
-  ChevronDown, ChevronUp, Loader2, Flag, Calendar, Clock, X, Layers
+  ChevronDown, ChevronUp, Loader2, Flag, Calendar, Clock, X, Layers, User, ShieldAlert
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -15,10 +15,12 @@ import { cn } from "@/lib/utils"
 import type { Skill, Milestone, Task } from "@/lib/types"
 import { skillsApi, milestoneApi, taskApi } from "@/lib/api"
 import { useWorkspaceStore } from "@/lib/stores/workspace-store"
+import { useIsAdmin } from "@/lib/hooks/use-role"
 import Link from "next/link"
 
-// ── Milestone List ───────────────────────────────────────────────────────────
+// ── Milestone Panel ──────────────────────────────────────────────────────────
 function MilestonePanel({ skillId }: { skillId: string }) {
+  const isAdmin = useIsAdmin()
   const [milestones, setMilestones] = useState<Milestone[]>([])
   const [loading, setLoading] = useState(true)
   const [newTitle, setNewTitle] = useState("")
@@ -47,6 +49,7 @@ function MilestonePanel({ skillId }: { skillId: string }) {
   }
 
   const handleToggle = async (id: string) => {
+    if (!isAdmin) return
     const updated = await milestoneApi.toggle(id)
     setMilestones((prev) => prev.map((m) => m._id === id ? updated : m))
   }
@@ -76,9 +79,12 @@ function MilestonePanel({ skillId }: { skillId: string }) {
         >
           <button
             onClick={() => handleToggle(m._id)}
+            disabled={!isAdmin}
+            title={isAdmin ? (m.isCompleted ? "Mark incomplete" : "Mark complete") : "Only admins can approve milestones"}
             className={cn(
               "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all",
-              m.isCompleted ? "bg-primary border-primary" : "border-muted-foreground hover:border-primary"
+              m.isCompleted ? "bg-primary border-primary" : "border-muted-foreground",
+              isAdmin ? "hover:border-primary cursor-pointer" : "cursor-not-allowed opacity-50"
             )}
           >
             {m.isCompleted && <CheckCircle2 className="h-3 w-3 text-primary-foreground" />}
@@ -95,6 +101,7 @@ function MilestonePanel({ skillId }: { skillId: string }) {
         </motion.div>
       ))}
 
+      {/* Members can also add milestones */}
       {showAdd ? (
         <div className="flex flex-col gap-2 mt-2 bg-muted/20 p-2 rounded-xl border">
           <Input
@@ -128,11 +135,17 @@ function MilestonePanel({ skillId }: { skillId: string }) {
           <Plus className="h-3.5 w-3.5" /> Add milestone
         </button>
       )}
+
+      {!isAdmin && milestones.length > 0 && (
+        <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-1 italic">
+          <ShieldAlert className="h-3 w-3" /> Admin approval required to complete milestones
+        </p>
+      )}
     </div>
   )
 }
 
-// ── Task Kanban ──────────────────────────────────────────────────────────────
+// ── Task Kanban ───────────────────────────────────────────────────────────────
 const PRIORITY_COLORS = {
   low: "text-sky-500 bg-sky-500/10 border-sky-500/20",
   medium: "text-amber-500 bg-amber-500/10 border-amber-500/20",
@@ -146,14 +159,23 @@ const STATUS_COLUMNS = [
 ]
 
 function TaskPanel({ skillId, skillName }: { skillId: string, skillName: string }) {
+  const isAdmin = useIsAdmin()
+  const { activeWorkspace } = useWorkspaceStore()
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [newTitle, setNewTitle] = useState("")
   const [newDate, setNewDate] = useState("")
   const [newPriority, setNewPriority] = useState<"low" | "medium" | "high">("medium")
+  const [newAssigneeId, setNewAssigneeId] = useState("")
   const [adding, setAdding] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
+
+  // Build workspace member list for assignee dropdown
+  const members = activeWorkspace ? [
+    { _id: activeWorkspace.owner._id, email: activeWorkspace.owner.email },
+    ...activeWorkspace.members.map((m) => ({ _id: m.user._id, email: m.user.email }))
+  ].filter((m, idx, arr) => arr.findIndex(x => x._id === m._id) === idx) : []
 
   useEffect(() => {
     if (isOpen && loading) {
@@ -162,29 +184,31 @@ function TaskPanel({ skillId, skillName }: { skillId: string, skillName: string 
   }, [skillId, isOpen, loading])
 
   const handleAdd = async () => {
-    if (!newTitle.trim()) return
+    if (!newTitle.trim() || !isAdmin) return
     setAdding(true)
     try {
       const t = await taskApi.create(skillId, newTitle.trim(), {
         dueDate: newDate || undefined,
-        priority: newPriority
+        priority: newPriority,
+        assigneeId: newAssigneeId || undefined,
       })
       setTasks((prev) => [t, ...prev])
       setNewTitle("")
       setNewDate("")
       setNewPriority("medium")
+      setNewAssigneeId("")
       setShowAdd(false)
     } finally {
       setAdding(false)
     }
   }
 
+  // Only admins can move tasks between columns
   const handleStatusChange = async (id: string, status: Task["status"]) => {
+    if (!isAdmin) return
     setTasks((prev) => prev.map((t) => t._id === id ? { ...t, status } : t))
     await taskApi.update(id, { status })
   }
-
-  const completedCount = tasks.filter(t => t.status === "completed").length
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -192,20 +216,25 @@ function TaskPanel({ skillId, skillName }: { skillId: string, skillName: string 
         <Button variant="outline" size="sm" className="w-full justify-between rounded-xl h-9 border-dashed mt-2">
           <span className="flex items-center gap-2">
             <ListTodo className="h-4 w-4 text-muted-foreground" />
-            Manage Tasks
+            {isAdmin ? "Manage Tasks" : "View Tasks"}
           </span>
           <ChevronDown className="h-4 w-4 text-muted-foreground" />
         </Button>
       </DialogTrigger>
-      
+
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl p-6">
         <DialogHeader className="mb-4">
           <DialogTitle className="flex items-center gap-2 text-2xl">
             <ListTodo className="h-6 w-6 text-primary" />
             {skillName} Tasks
+            {!isAdmin && (
+              <Badge variant="outline" className="text-xs ml-2 font-normal">
+                <ShieldAlert className="h-3 w-3 mr-1" /> View Only
+              </Badge>
+            )}
           </DialogTitle>
         </DialogHeader>
-        
+
         {loading ? (
           <div className="py-12 flex justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
         ) : (
@@ -241,17 +270,29 @@ function TaskPanel({ skillId, skillName }: { skillId: string, skillName: string 
                               </span>
                             )}
                           </div>
-                          <div className="flex gap-1 flex-wrap">
-                            {STATUS_COLUMNS.filter((s) => s.key !== col.key).map((s) => (
-                              <button
-                                key={s.key}
-                                onClick={() => handleStatusChange(task._id, s.key)}
-                                className="text-[9px] px-2 py-0.5 rounded-md bg-muted hover:bg-primary hover:text-primary-foreground transition-colors font-medium"
-                              >
-                                → {s.label}
-                              </button>
-                            ))}
-                          </div>
+                          {/* Assignee chip */}
+                          {task.assignee && (
+                            <div className="flex items-center gap-1 mb-2">
+                              <User className="h-2.5 w-2.5 text-muted-foreground" />
+                              <span className="text-[9px] text-muted-foreground truncate max-w-[120px]">
+                                {task.assignee.name || task.assignee.email}
+                              </span>
+                            </div>
+                          )}
+                          {/* Status move buttons — admin only */}
+                          {isAdmin && (
+                            <div className="flex gap-1 flex-wrap">
+                              {STATUS_COLUMNS.filter((s) => s.key !== col.key).map((s) => (
+                                <button
+                                  key={s.key}
+                                  onClick={() => handleStatusChange(task._id, s.key)}
+                                  className="text-[9px] px-2 py-0.5 rounded-md bg-muted hover:bg-primary hover:text-primary-foreground transition-colors font-medium"
+                                >
+                                  → {s.label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </motion.div>
                       ))}
                     </AnimatePresence>
@@ -263,48 +304,67 @@ function TaskPanel({ skillId, skillName }: { skillId: string, skillName: string 
               })}
             </div>
 
-            {showAdd ? (
-              <div className="flex flex-col gap-3 mt-4 bg-muted/30 p-3 rounded-2xl border">
-                <Input
-                  placeholder="Task title..."
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-                  className="text-sm rounded-xl bg-card"
-                  autoFocus
-                />
-                <div className="flex flex-col sm:flex-row items-center gap-3">
+            {/* Add task — admin only */}
+            {isAdmin && (
+              showAdd ? (
+                <div className="flex flex-col gap-3 mt-4 bg-muted/30 p-3 rounded-2xl border">
                   <Input
-                    type="date"
-                    value={newDate}
-                    onChange={(e) => setNewDate(e.target.value)}
-                    className="h-9 text-xs rounded-xl bg-card w-full sm:flex-1"
+                    placeholder="Task title..."
+                    value={newTitle}
+                    onChange={(e) => setNewTitle(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+                    className="text-sm rounded-xl bg-card"
+                    autoFocus
                   />
-                  <select 
-                    value={newPriority}
-                    onChange={(e) => setNewPriority(e.target.value as any)}
-                    className="h-9 text-xs rounded-xl bg-card border px-3 w-full sm:flex-1"
-                  >
-                    <option value="low">Low Priority</option>
-                    <option value="medium">Medium Priority</option>
-                    <option value="high">High Priority</option>
-                  </select>
-                  <Button className="h-9 rounded-xl px-6 w-full sm:w-auto font-bold" onClick={handleAdd} disabled={adding || !newTitle.trim()}>
-                    {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Task"}
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => setShowAdd(false)} className="h-9 w-9 text-muted-foreground hover:text-foreground shrink-0">
-                    <X className="h-4 w-4" />
-                  </Button>
+                  <div className="flex flex-col sm:flex-row items-center gap-3">
+                    <Input
+                      type="date"
+                      value={newDate}
+                      onChange={(e) => setNewDate(e.target.value)}
+                      className="h-9 text-xs rounded-xl bg-card w-full sm:flex-1"
+                    />
+                    <select
+                      value={newPriority}
+                      onChange={(e) => setNewPriority(e.target.value as any)}
+                      className="h-9 text-xs rounded-xl bg-card border px-3 w-full sm:flex-1"
+                    >
+                      <option value="low">Low Priority</option>
+                      <option value="medium">Medium Priority</option>
+                      <option value="high">High Priority</option>
+                    </select>
+                    <select
+                      value={newAssigneeId}
+                      onChange={(e) => setNewAssigneeId(e.target.value)}
+                      className="h-9 text-xs rounded-xl bg-card border px-3 w-full sm:flex-1"
+                    >
+                      <option value="">Unassigned</option>
+                      {members.map((m) => (
+                        <option key={m._id} value={m._id}>{m.email}</option>
+                      ))}
+                    </select>
+                    <Button className="h-9 rounded-xl px-6 w-full sm:w-auto font-bold" onClick={handleAdd} disabled={adding || !newTitle.trim()}>
+                      {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Task"}
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => setShowAdd(false)} className="h-9 w-9 text-muted-foreground hover:text-foreground shrink-0">
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <Button
-                variant="outline"
-                onClick={() => setShowAdd(true)}
-                className="w-full border-dashed rounded-xl gap-2 mt-2"
-              >
-                <Plus className="h-4 w-4" /> Add New Task
-              </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  onClick={() => setShowAdd(true)}
+                  className="w-full border-dashed rounded-xl gap-2 mt-2"
+                >
+                  <Plus className="h-4 w-4" /> Add New Task
+                </Button>
+              )
+            )}
+
+            {!isAdmin && (
+              <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1.5 py-2 italic">
+                <ShieldAlert className="h-3.5 w-3.5" /> Only admins can create or move tasks
+              </p>
             )}
           </div>
         )}
@@ -313,7 +373,7 @@ function TaskPanel({ skillId, skillName }: { skillId: string, skillName: string 
   )
 }
 
-// ── Skill Card ───────────────────────────────────────────────────────────────
+// ── Skill Card ────────────────────────────────────────────────────────────────
 type ActiveTab = "milestones" | "tasks"
 
 function SkillCard({
@@ -327,6 +387,7 @@ function SkillCard({
   onPractice: (id: string) => void
   loading: boolean
 }) {
+  const isAdmin = useIsAdmin()
   const [expanded, setExpanded] = useState(false)
   const [activeTab, setActiveTab] = useState<ActiveTab>("milestones")
 
@@ -367,15 +428,18 @@ function SkillCard({
                 </Badge>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 rounded-full shrink-0"
-              onClick={() => onToggle(skill.id)}
-              title={skill.isActive ? "Deactivate" : "Activate"}
-            >
-              <Power className="h-4 w-4" />
-            </Button>
+            {/* Toggle active — admin only */}
+            {isAdmin && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full shrink-0"
+                onClick={() => onToggle(skill.id)}
+                title={skill.isActive ? "Deactivate" : "Activate"}
+              >
+                <Power className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </CardHeader>
 
@@ -451,8 +515,9 @@ function SkillCard({
   )
 }
 
-// ── Main Page ────────────────────────────────────────────────────────────────
-export default function SkillsPage() {
+// ── Main Page ──────────────────────────────────────────────────────────────────
+export default function WorkPage() {
+  const isAdmin = useIsAdmin()
   const { activeWorkspace } = useWorkspaceStore()
   const [skills, setSkills] = useState<Skill[]>([])
   const [loading, setLoading] = useState(false)
@@ -472,7 +537,7 @@ export default function SkillsPage() {
   useEffect(() => { fetchSkills() }, [fetchSkills])
 
   const handleAddSkill = async () => {
-    if (!newSkill.trim() || !activeWorkspace) return
+    if (!newSkill.trim() || !activeWorkspace || !isAdmin) return
     setLoading(true)
     try {
       const created = await skillsApi.create(newSkill.trim(), activeWorkspace._id)
@@ -497,11 +562,12 @@ export default function SkillsPage() {
   }
 
   const handleToggleActive = async (id: string) => {
+    if (!isAdmin) return
     await skillsApi.toggleActive(id)
     await fetchSkills()
   }
 
-  // ── No workspace selected ─────────────────────────────────────────────────
+  // ── No workspace selected ──────────────────────────────────────────────────
   if (!activeWorkspace) {
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-5 text-center">
@@ -511,7 +577,7 @@ export default function SkillsPage() {
         <div>
           <h2 className="text-xl font-bold">No workspace selected</h2>
           <p className="text-sm text-muted-foreground mt-1 max-w-xs">
-            Create or select a workspace first to manage skills
+            Create or select a workspace first to manage work
           </p>
         </div>
         <Link href="/workspaces">
@@ -533,32 +599,41 @@ export default function SkillsPage() {
             <Layers className="h-3.5 w-3.5" />
             {activeWorkspace.name}
           </p>
-          <h1 className="text-3xl font-extrabold tracking-tight">Skills</h1>
-          <p className="text-muted-foreground mt-1 text-sm">Track what you practice daily</p>
+          <h1 className="text-3xl font-extrabold tracking-tight">Work</h1>
+          <p className="text-muted-foreground mt-1 text-sm">Track skills and manage team tasks</p>
         </div>
-        <Badge variant="outline" className="text-xs h-6 px-3 self-start sm:self-auto">
-          {skills.length} skill{skills.length !== 1 ? "s" : ""}
-        </Badge>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <Badge variant="outline" className="text-xs h-6 px-3">
+            {skills.length} skill{skills.length !== 1 ? "s" : ""}
+          </Badge>
+          {!isAdmin && (
+            <Badge variant="secondary" className="text-xs h-6 px-3 flex items-center gap-1">
+              <ShieldAlert className="h-3 w-3" /> Member View
+            </Badge>
+          )}
+        </div>
       </div>
 
-      {/* Add skill */}
-      <div className="flex gap-3 max-w-md">
-        <Input
-          placeholder="New skill name..."
-          value={newSkill}
-          onChange={(e) => setNewSkill(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleAddSkill()}
-          className="rounded-full px-5 h-11 border-border"
-        />
-        <Button
-          onClick={handleAddSkill}
-          disabled={loading || !newSkill.trim()}
-          className="rounded-full px-5 h-11 font-bold shrink-0"
-        >
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4 mr-1" />}
-          Add
-        </Button>
-      </div>
+      {/* Add skill — admin only */}
+      {isAdmin && (
+        <div className="flex gap-3 max-w-md">
+          <Input
+            placeholder="New skill name..."
+            value={newSkill}
+            onChange={(e) => setNewSkill(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleAddSkill()}
+            className="rounded-full px-5 h-11 border-border"
+          />
+          <Button
+            onClick={handleAddSkill}
+            disabled={loading || !newSkill.trim()}
+            className="rounded-full px-5 h-11 font-bold shrink-0"
+          >
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4 mr-1" />}
+            Add
+          </Button>
+        </div>
+      )}
 
       {/* Skills grid */}
       {loading && skills.length === 0 ? (
@@ -574,7 +649,9 @@ export default function SkillsPage() {
           </div>
           <div>
             <h3 className="font-bold text-lg">No skills yet</h3>
-            <p className="text-sm text-muted-foreground">Add your first skill to start tracking</p>
+            <p className="text-sm text-muted-foreground">
+              {isAdmin ? "Add your first skill to start tracking" : "No skills have been added to this workspace yet"}
+            </p>
           </div>
         </div>
       ) : (

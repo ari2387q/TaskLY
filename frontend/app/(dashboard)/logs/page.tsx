@@ -176,7 +176,7 @@ export default function LogsPage() {
     <div className="space-y-8">
 
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Practice Logs</h1>
+        <h1 className="text-3xl font-bold">Logs</h1>
 
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>

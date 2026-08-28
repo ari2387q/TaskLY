@@ -141,17 +141,24 @@ export default function CalendarPage() {
                   
                   {dayTasks.map(t => (
                     <div key={t._id} className={cn(
-                      "text-[10px] border rounded-md p-1.5 font-medium flex items-start gap-1",
-                      t.status === "completed" 
-                        ? "bg-muted text-muted-foreground border-border" 
-                        : t.priority === "high" 
+                      "text-[10px] border rounded-md p-1.5 font-medium flex flex-col gap-0.5",
+                      t.status === "completed"
+                        ? "bg-muted text-muted-foreground border-border"
+                        : t.priority === "high"
                           ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
                           : t.priority === "medium"
                             ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
                             : "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20"
                     )}>
-                      {t.status === "completed" ? <CheckCircle2 className="h-3 w-3 shrink-0 mt-0.5" /> : <Clock className="h-3 w-3 shrink-0 mt-0.5" />}
-                      <span className={cn("line-clamp-2 leading-tight", t.status === "completed" && "line-through")}>{t.title}</span>
+                      <span className="flex items-start gap-1">
+                        {t.status === "completed" ? <CheckCircle2 className="h-3 w-3 shrink-0 mt-0.5" /> : <Clock className="h-3 w-3 shrink-0 mt-0.5" />}
+                        <span className={cn("line-clamp-2 leading-tight", t.status === "completed" && "line-through")}>{t.title}</span>
+                      </span>
+                      {t.assignee && (
+                        <span className="text-[9px] opacity-75 pl-4 truncate">
+                          👤 {t.assignee.name || t.assignee.email}
+                        </span>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -178,6 +185,10 @@ export default function CalendarPage() {
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm bg-sky-500/20 border border-sky-500/40" />
           <span>Low Priority Task</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span>👤</span>
+          <span>Assigned member</span>
         </div>
       </div>
     </div>

@@ -2,7 +2,7 @@ import Milestone from "./milestone.model";
 import Skill from "../skills/skill.model";
 import Workspace from "../workspaces/workspace.model";
 
-const verifySkillAccess = async (skillId: string, userId: string) => {
+const getWorkspaceForSkill = async (skillId: string, userId: string) => {
   const skill = await Skill.findById(skillId);
   if (!skill) throw new Error("Skill not found");
 
@@ -12,7 +12,15 @@ const verifySkillAccess = async (skillId: string, userId: string) => {
   });
 
   if (!workspace) throw new Error("Access to skill workspace denied");
-  return skill;
+  return { skill, workspace };
+};
+
+const isAdminOfWorkspace = (workspace: any, userId: string): boolean => {
+  const isOwner = workspace.owner.toString() === userId.toString();
+  const isAdmin = workspace.members.some(
+    (m: any) => m.user.toString() === userId.toString() && m.role === "admin"
+  );
+  return isOwner || isAdmin;
 };
 
 export const createMilestone = async (
@@ -22,7 +30,8 @@ export const createMilestone = async (
   targetDate: Date | undefined,
   userId: string
 ) => {
-  await verifySkillAccess(skillId, userId);
+  // Any member can add a milestone
+  await getWorkspaceForSkill(skillId, userId);
 
   const milestone = await Milestone.create({
     title,
@@ -35,7 +44,7 @@ export const createMilestone = async (
 };
 
 export const getSkillMilestones = async (skillId: string, userId: string) => {
-  await verifySkillAccess(skillId, userId);
+  await getWorkspaceForSkill(skillId, userId);
   return await Milestone.find({ skill: skillId }).sort({ targetDate: 1, createdAt: 1 });
 };
 
@@ -56,7 +65,12 @@ export const toggleMilestone = async (milestoneId: string, userId: string) => {
   const milestone = await Milestone.findById(milestoneId);
   if (!milestone) throw new Error("Milestone not found");
 
-  await verifySkillAccess(milestone.skill.toString(), userId);
+  const { workspace } = await getWorkspaceForSkill(milestone.skill.toString(), userId);
+
+  // Only admins/owners can approve (cross off) a milestone
+  if (!isAdminOfWorkspace(workspace, userId)) {
+    throw new Error("Only admins can mark milestones as complete");
+  }
 
   milestone.isCompleted = !milestone.isCompleted;
   await milestone.save();

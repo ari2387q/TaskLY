@@ -60,6 +60,7 @@ export interface Task {
   dueDate?: string
   duration?: number
   user: string
+  assignee?: { _id: string; email: string; name?: string } | null
   createdAt: string
   updatedAt: string
 }

@@ -17,7 +17,7 @@ import { motion, AnimatePresence } from "framer-motion"
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Workspaces", href: "/workspaces", icon: Layers },
-  { name: "Skills & Tasks", href: "/skills", icon: BookOpen },
+  { name: "Work", href: "/skills", icon: BookOpen },
   { name: "Calendar", href: "/calendar", icon: CalendarDays },
   { name: "Settings", href: "/settings", icon: Settings },
   { name: "Logs", href: "/logs", icon: Clock },

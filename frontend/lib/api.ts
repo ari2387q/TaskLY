@@ -134,7 +134,7 @@ export const taskApi = {
   create: async (
     skillId: string,
     title: string,
-    opts?: { description?: string; priority?: "low" | "medium" | "high"; dueDate?: string; duration?: number }
+    opts?: { description?: string; priority?: "low" | "medium" | "high"; dueDate?: string; duration?: number; assigneeId?: string }
   ): Promise<Task> => {
     const res = await fetchWithAuth("/tasks", {
       method: "POST",
@@ -144,7 +144,7 @@ export const taskApi = {
   },
   update: async (
     id: string,
-    updates: { title?: string; description?: string; status?: Task["status"]; priority?: Task["priority"]; dueDate?: string; duration?: number }
+    updates: { title?: string; description?: string; status?: Task["status"]; priority?: Task["priority"]; dueDate?: string; duration?: number; assigneeId?: string | null }
   ): Promise<Task> => {
     const res = await fetchWithAuth(`/tasks/${id}`, {
       method: "PATCH",

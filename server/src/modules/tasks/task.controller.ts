@@ -3,7 +3,7 @@ import * as taskService from "./task.service";
 
 export const createTask = async (req: Request, res: Response) => {
   try {
-    const { skillId, title, description, priority, dueDate, duration } = req.body;
+    const { skillId, title, description, priority, dueDate, duration, assigneeId } = req.body;
     const userId = (req as any).user._id;
 
     if (!skillId || !title) {
@@ -17,7 +17,8 @@ export const createTask = async (req: Request, res: Response) => {
       priority || "medium",
       dueDate ? new Date(dueDate) : undefined,
       duration ? Number(duration) : undefined,
-      userId
+      userId,
+      assigneeId || undefined
     );
 
     res.status(201).json({ success: true, task });
@@ -62,7 +63,7 @@ export const updateTask = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const userId = (req as any).user._id;
-    const { title, description, status, priority, dueDate, duration } = req.body;
+    const { title, description, status, priority, dueDate, duration, assigneeId } = req.body;
 
     const task = await taskService.updateTask(
       id,
@@ -73,6 +74,7 @@ export const updateTask = async (req: Request, res: Response) => {
         priority,
         dueDate: dueDate ? new Date(dueDate) : undefined,
         duration: duration ? Number(duration) : undefined,
+        assigneeId: assigneeId !== undefined ? (assigneeId || null) : undefined,
       },
       userId
     );

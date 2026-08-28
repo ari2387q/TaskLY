@@ -9,6 +9,7 @@ export interface ITask extends Document {
   dueDate?: Date;
   duration?: number; // target duration in minutes
   user: mongoose.Types.ObjectId;
+  assignee?: mongoose.Types.ObjectId; // workspace member assigned to this task
   createdAt: Date;
   updatedAt: Date;
 }
@@ -53,6 +54,11 @@ const taskSchema = new Schema<ITask>(
       ref: "User",
       required: true,
       index: true,
+    },
+    assignee: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
     },
   },
   { timestamps: true }
