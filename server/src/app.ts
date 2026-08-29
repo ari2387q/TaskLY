@@ -19,11 +19,7 @@ const allowedOrigins = ["http://localhost:3000", process.env.CLIENT_URL].filter(
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Normalize URLs by removing trailing slashes
-      const normalizedOrigin = origin?.replace(/\/$/, "");
-      const normalizedAllowed = allowedOrigins.map(o => o.replace(/\/$/, ""));
-
-      if (!origin || normalizedAllowed.includes(normalizedOrigin)) {
+      if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
