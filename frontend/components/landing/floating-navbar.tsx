@@ -40,7 +40,7 @@ export function FloatingNavbar() {
       }`}
     >
       <Link href="/" className="text-xl font-black text-white tracking-tight flex items-center gap-1">
-        SkillTracker<span className="text-[#c2f82b]">.</span>
+        TaskLY<span className="text-[#c2f82b]">.</span>
       </Link>
 
       <div className="hidden md:flex items-center gap-6">

@@ -142,7 +142,7 @@ const sendMessage = async () => {
             <textarea
               value={input}
               onChange={e => setInput(e.target.value)}
-              placeholder="Ask Skill Tracker AI anything…"
+              placeholder="Ask TaskLY AI anything…"
               rows={1}
               className="flex-1 resize-none bg-transparent outline-none text-sm max-h-40 text-foreground placeholder:text-muted-foreground"
               onKeyDown={e => {

@@ -31,7 +31,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="p-1.5 rounded-lg bg-primary text-primary-foreground shadow-sm">
               <Rocket className="h-4 w-4" />
             </div>
-            <span>Skill<span className="text-primary">Tracker</span></span>
+            <span>Task<span className="text-primary">LY</span></span>
           </Link>
           <div className="w-9" /> {/* spacer */}
         </header>

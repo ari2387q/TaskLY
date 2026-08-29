@@ -46,7 +46,7 @@ app.get("/health", (_req, res) => {
 });
 
 app.get("/", (_req, res) => {
-  res.send("Skill Tracker API is running!");
+  res.send("TaskLY API is running!");
 });
 
 export default app;

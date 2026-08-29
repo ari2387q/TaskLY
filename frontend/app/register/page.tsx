@@ -56,7 +56,7 @@ export default function RegisterPage() {
       await register(formData.email, formData.password, formData.name)
       toast({
         title: "Account created!",
-        description: "Welcome to Skill Tracker.",
+        description: "Welcome to TaskLY.",
       })
       router.push("/login")
     } catch (error: any) {
@@ -87,10 +87,10 @@ export default function RegisterPage() {
             <Rocket className="h-8 w-8 animate-bounce" />
           </div>
           <h1 className="text-5xl font-black tracking-tight leading-none">
-            Join <span className="text-primary">SkillTracker</span>
+            Join <span className="text-primary">TaskLY</span>
           </h1>
           <p className="text-lg text-muted-foreground leading-relaxed">
-            Build daily habits, track your progress, and reach new heights — one skill at a time.
+            Collaborate on workspaces, track tasks, and build momentum with your team.
           </p>
         </div>
       </div>

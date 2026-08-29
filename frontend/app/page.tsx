@@ -37,7 +37,7 @@ export default function LandingPage() {
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="text-6xl md:text-8xl lg:text-[10rem] font-black text-white tracking-tighter leading-none mb-6"
           >
-            SkillTracker<span className="text-[#c2f82b]">.</span>
+            TaskLY<span className="text-[#c2f82b]">.</span>
           </motion.h1>
           
           <motion.div 
@@ -111,9 +111,9 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t border-white/10 bg-black py-12">
         <div className="container mx-auto px-4 text-center">
-          <p className="text-zinc-600 font-medium">
-            © {new Date().getFullYear()} SkillTracker. All rights reserved.
-          </p>
+          <div className="text-zinc-600 text-xs font-semibold">
+            © {new Date().getFullYear()} TaskLY. All rights reserved.
+          </div>
         </div>
       </footer>
     </div>

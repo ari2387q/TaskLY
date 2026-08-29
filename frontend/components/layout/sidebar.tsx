@@ -158,7 +158,7 @@ function NavContent({ onClose, isCollapsed, onToggleCollapse }: {
                 <Rocket className="h-5 w-5 animate-pulse" />
               </div>
               <span className="tracking-tight">
-                Skill<span className="text-primary">Tracker</span>
+                Task<span className="text-primary">LY</span>
               </span>
             </Link>
             <button

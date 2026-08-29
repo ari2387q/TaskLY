@@ -77,10 +77,10 @@ export default function LoginPage() {
             <Rocket className="h-8 w-8 animate-bounce" />
           </div>
           <h1 className="text-5xl font-black tracking-tight leading-none">
-            Skill<span className="text-primary">Tracker</span>
+            Task<span className="text-primary">LY</span>
           </h1>
           <p className="text-lg text-muted-foreground leading-relaxed">
-            Track daily habits, construct long streaks, and leverage smart stats to master your skills.
+            Collaborate on workspaces, track tasks, and build momentum with your team.
           </p>
         </div>
       </div>

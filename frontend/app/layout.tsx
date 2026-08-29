@@ -20,8 +20,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Skill Tracker - Track Your Progress",
-  description: "Track your skills, build streaks, and achieve your goals",
+  title: "TaskLY - Collaborative Work & Task Management",
+  description: "Collaborative workspaces, tasks, milestones, and habit tracking with TaskLY",
   icons: [
     { rel: "icon", type: "image/svg+xml", url: "/icon.svg" },
     { rel: "shortcut icon", url: "/icon.svg" },

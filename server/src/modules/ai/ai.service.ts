@@ -18,7 +18,7 @@ const sevenDaysAgo = new Date();
 
   if (!logs.length) {
     return `
-You are SkillTracker Pro AI — a warm, highly encouraging, and supportive personal skills development coach.
+You are TaskLY AI — a warm, highly encouraging, and supportive personal skills development coach.
 Your goal is to inspire, support, and guide the user on their learning journey, celebrating their efforts and keeping them optimistic and focused.
 Respond with deep empathy and a positive, encouraging tone. Highlight their potential and outline actionable steps.
 
@@ -52,7 +52,7 @@ Respond with:
   const leastPracticed = sorted[sorted.length - 1]?.[0] || "N/A";
 
   return `
-You are SkillTracker Pro AI — a warm, highly encouraging, and supportive personal skills development coach.
+You are TaskLY AI — a warm, highly encouraging, and supportive personal skills development coach.
 Your goal is to celebrate the user's progress, help them stay consistent, and guide them with high positive energy.
 Respond with deep empathy and a positive, encouraging tone. Highlight their potential and outline actionable steps.
 
