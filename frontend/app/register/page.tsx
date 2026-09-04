@@ -10,10 +10,12 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
 import { Label } from "@/components/ui/label"
-import { Rocket } from "lucide-react"
+import { Rocket, Eye, EyeOff, ArrowLeft } from "lucide-react"
 
 export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -80,6 +82,15 @@ export default function RegisterPage() {
       <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] rounded-full bg-primary/10 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] rounded-full bg-secondary/10 blur-[120px] pointer-events-none" />
 
+      {/* Back to Home */}
+      <Link
+        href="/"
+        className="absolute top-5 left-5 z-20 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors font-medium"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back to Home
+      </Link>
+
       {/* Left: Branding */}
       <div className="hidden md:flex w-1/2 bg-gradient-to-br from-primary/10 via-background to-secondary/5 text-foreground items-center justify-center p-12 border-r border-border">
         <div className="max-w-md space-y-6">
@@ -135,29 +146,49 @@ export default function RegisterPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="password" className="font-bold text-xs uppercase tracking-wider text-muted-foreground ml-1">Password</Label>
-                    <Input
-                      id="password"
-                      name="password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      required
-                      className="rounded-full px-5 py-3 h-11 border-border bg-background"
-                    />
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        name="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        required
+                        className="rounded-full px-5 py-3 h-11 border-border bg-background pr-12"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((p) => !p)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        tabIndex={-1}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="confirmPassword" className="font-bold text-xs uppercase tracking-wider text-muted-foreground ml-1">Confirm Password</Label>
-                    <Input
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      type="password"
-                      placeholder="••••••••"
-                      value={formData.confirmPassword}
-                      onChange={handleInputChange}
-                      required
-                      className="rounded-full px-5 py-3 h-11 border-border bg-background"
-                    />
+                    <div className="relative">
+                      <Input
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        type={showConfirmPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        value={formData.confirmPassword}
+                        onChange={handleInputChange}
+                        required
+                        className="rounded-full px-5 py-3 h-11 border-border bg-background pr-12"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword((p) => !p)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        tabIndex={-1}
+                      >
+                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </div>
                   <Button type="submit" className="w-full rounded-full h-11 font-bold shadow-lg shadow-primary/15 hover:scale-[1.01] active:scale-[0.99] transition-all duration-350 mt-2" disabled={isLoading}>
                     {isLoading ? "Creating account..." : "Create account"}
