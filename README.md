@@ -50,7 +50,6 @@ cd frontend
 npm install
 npm run dev
 ```
-
 ## Environment Variables
 
 See `server/.env.example` for the full list of required server environment variables including Brevo SMTP setup.
