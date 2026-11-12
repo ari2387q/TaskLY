@@ -3,7 +3,6 @@
 A modern, collaborative workspace and skill management platform.
 
 TaskLY is a productivity-focused application that helps teams organize, monitor, and track work across projects. With role-based access control, task assignment, milestone tracking, a calendar view, and an AI coach, TaskLY gives teams a structured way to measure growth and maintain consistency.
-
 ## Features
 
 - **Workspaces** — Create and manage collaborative workspaces with members and roles
